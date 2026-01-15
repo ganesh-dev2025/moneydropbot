@@ -1,6 +1,6 @@
 import telebot
-
-TOKEN = "PASTE_TOKEN_HERE"
+import os
+TOKEN = os.environ.get("TOKEN")
 CHANNEL = "@moneydrop5488"
 
 bot = telebot.TeleBot(TOKEN)
