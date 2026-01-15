@@ -89,7 +89,7 @@ def send_referral_panel(user_id):
         )
         return
 
-    link = f"https://t.me/freesub_gain_bot?start={user_id}"
+    link = f"https://t.me/freesubgainbot?start={user_id}"
 
     markup = types.InlineKeyboardMarkup()
     status = types.InlineKeyboardButton("📊 How many invites", callback_data="status")
