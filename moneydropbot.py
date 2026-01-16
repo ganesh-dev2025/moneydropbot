@@ -1,4 +1,4 @@
-import telebot 
+import telebot
 import os
 from telebot import types
 
@@ -8,7 +8,7 @@ REQUIRED_INVITES = 2
 
 bot = telebot.TeleBot(TOKEN)
 
-# user_id -> {"invites": set(), "unlocked": False}
+# user_id -> {"invites": set()}
 users = {}
 
 def is_joined(user_id):
@@ -24,32 +24,47 @@ def start(msg):
     args = msg.text.split()
 
     if user_id not in users:
-        users[user_id] = {"invites": set(), "unlocked": False}
+        users[user_id] = {"invites": set()}
 
-    # Referral detect
-    if len(args) > 1:
-        ref_id = args[1]
-        if ref_id.isdigit():
-            ref_id = int(ref_id)
-            if ref_id != user_id and ref_id in users:
-                if user_id not in users[ref_id]["invites"] and is_joined(user_id):
-                    users[ref_id]["invites"].add(user_id)
-                    inviter_name = msg.from_user.first_name
-                    bot.send_message(
-                        ref_id,
-                        f"✅ {inviter_name} successfully invited by you\n🎯 {len(users[ref_id]['invites'])}/{REQUIRED_INVITES} completed"
-                    )
+    # -------- Referral Detect --------
+    if len(args) > 1 and args[1].isdigit():
+        ref_id = int(args[1])
 
+        if ref_id != user_id:
+            if ref_id not in users:
+                users[ref_id] = {"invites": set()}
+
+            if (
+                user_id not in users[ref_id]["invites"]
+                and is_joined(user_id)
+            ):
+                users[ref_id]["invites"].add(user_id)
+
+                inviter_name = msg.from_user.first_name or "User"
+                bot.send_message(
+                    ref_id,
+                    f"✅ {inviter_name} successfully invited\n"
+                    f"🎯 {len(users[ref_id]['invites'])}/{REQUIRED_INVITES} completed"
+                )
+
+    # -------- Force Channel Join --------
     if not is_joined(user_id):
         markup = types.InlineKeyboardMarkup()
-        join = types.InlineKeyboardButton("📢 Join MoneyDrop Channel", url="https://t.me/moneydrop5488")
-        check = types.InlineKeyboardButton("✅ Joined", callback_data="check")
+        join = types.InlineKeyboardButton(
+            "📢 Join MoneyDrop Channel",
+            url="https://t.me/moneydrop5488"
+        )
+        check = types.InlineKeyboardButton(
+            "✅ Joined",
+            callback_data="check"
+        )
         markup.add(join)
         markup.add(check)
 
         bot.send_message(
             user_id,
-            "🔐 *Free Subscribers Unlock Karne ke liye*\n\nPehle hamara channel join karo 👇",
+            "🔐 *Free Subscribers Unlock Karne ke liye*\n\n"
+            "Pehle hamara channel join karo 👇",
             reply_markup=markup,
             parse_mode="Markdown"
         )
@@ -68,13 +83,14 @@ def check(call):
 @bot.callback_query_handler(func=lambda call: call.data == "status")
 def status(call):
     user_id = call.from_user.id
-    invited = len(users[user_id]["invites"])
+    invited = len(users.get(user_id, {"invites": set()})["invites"])
     remaining = REQUIRED_INVITES - invited
-    names = "\n".join([str(uid) for uid in users[user_id]["invites"]]) if invited > 0 else "None"
 
     bot.send_message(
         user_id,
-        f"📊 *Your Referral Status*\n\nInvited: {invited}\nRemaining: {remaining}\n\nUser IDs:\n{names}",
+        f"📊 *Your Referral Status*\n\n"
+        f"Invited: {invited}\n"
+        f"Remaining: {remaining}",
         parse_mode="Markdown"
     )
 
@@ -84,20 +100,28 @@ def send_referral_panel(user_id):
     if invited >= REQUIRED_INVITES:
         bot.send_message(
             user_id,
-            "🎉 *Unlocked!*\n\nYou have completed 2 invites.\n\n🎁 Reward unlocked — Contact Admin or Claim Reward.",
+            "🎉 *Unlocked!*\n\n"
+            "You have completed 2 invites.\n\n"
+            "🎁 Reward unlocked!",
             parse_mode="Markdown"
         )
         return
 
-    link = f"https://t.me/freesub_gain_bot?start={user_id}"
+    bot_username = bot.get_me().username
+    link = f"https://t.me/{bot_username}?start={user_id}"
 
     markup = types.InlineKeyboardMarkup()
-    status = types.InlineKeyboardButton("📊 How many invites", callback_data="status")
-    markup.add(status)
+    status_btn = types.InlineKeyboardButton(
+        "📊 How many invites",
+        callback_data="status"
+    )
+    markup.add(status_btn)
 
     bot.send_message(
         user_id,
-        f"🎯 *Invite 2 Friends to Unlock*\n\n🔗 Your Link:\n{link}\n\nInvited: {invited}/{REQUIRED_INVITES}",
+        f"🎯 *Invite 2 Friends to Unlock*\n\n"
+        f"🔗 Your Link:\n{link}\n\n"
+        f"Invited: {invited}/{REQUIRED_INVITES}",
         reply_markup=markup,
         parse_mode="Markdown"
     )
